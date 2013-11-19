@@ -1,23 +1,41 @@
 extern mod std;
 extern mod extra;
 
-struct ChildNode {
+struct ChildNode<'self> {
     pixel: Pixel,
-    parent: ParentNode
+    parent: &'self ParentNode 
 }
 
-impl ChildNode {
-
+impl<'self> ChildNode {
+     fn new(pixel: Pixel) -> ChildNode {
+     	let edgelist = ~[];
+	ChildNode {
+		  pixel: pixel,
+		  parent: ParentNode {
+		  	  edges: edgelist
+		 }		  
+	}
+     }       
 }
 
-struct Edge {
-    source: &ChildNode,
-    dest: &ChildNode,
+struct ParentNode<'self> {
+    edges: &'self [Edge]
+}
+
+struct Point {
+       x: int,
+       y: int
+}
+
+//the source and dest 
+struct Edge<'self> {
+    source: Point,
+    dest: Point,
     weight: int
 }
 
-impl Edge {
-    fn new(source: @ChildNode, dest: @ChildNode)-> Edge {
+impl<'self> Edge {
+    fn new<'e>(source: Point, dest: &'e Point)-> &'e Edge {
         Edge {
             source: source,
             dest: dest,
@@ -26,9 +44,6 @@ impl Edge {
     }
 }
 
-struct ParentNode {
-    edges: @[Edge]
-}
 
 struct Pixel {
     r: int,
