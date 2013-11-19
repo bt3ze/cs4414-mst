@@ -13,6 +13,17 @@ impl ChildNode {
 struct Edge {
     source: &ChildNode;
     dest: &ChildNode;
+    weight: int;
+}
+
+impl Edge {
+    fn new(source: &ChildNode, dest: &ChildNode)-> Edge {
+        Edge {
+            source: source;
+            dest: dest;
+            weight: 0;
+        }
+    }
 }
 
 struct ParentNode {
