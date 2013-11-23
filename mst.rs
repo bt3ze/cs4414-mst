@@ -11,11 +11,52 @@ A parallel MST implementation on images in Rust
 
 extern mod extra;
 
-use std::*;
+use std::{os, num,str} ;
 use extra::arc;
 
 struct Pixel{
-    a: int
+    r: int,
+    b: int,
+    g: int
+}
+
+impl Pixel {
+    fn new(red: int, blue: int, green: int) -> Pixel {
+        Pixel{
+            r: red,
+            b: blue,
+            g: green
+        }
+    }
+}
+
+struct Edge {
+    source: Pixel,
+    dest: Pixel,
+    cost: float
+}
+
+impl Edge {
+    fn new(s: Pixel, d: Pixel) -> Edge {
+        Edge {
+            source: s,
+            dest: d,
+            cost: edgeCost(s,d)
+        }
+    }
+}
+
+impl Ord for Edge {
+    fn lt(&self, other: &Edge) -> bool {
+        self.cost < other.cost
+    }
+}
+
+fn edgeCost(a: Pixel, b: Pixel) -> float {
+    num::sqrt( (
+            a.r*a.r - b.r*b.r +
+            a.g*a.g - b.g*b.g +
+            a.b*a.b - b.b*b.b ) as float)
 }
 
 fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
@@ -53,5 +94,8 @@ fn main(){
     }
     
     let arcs = find_arcs; // now we have an immutable array that can be shared
+    
+    let mut x= 0;
+    let mut y= 0;
     
 }
