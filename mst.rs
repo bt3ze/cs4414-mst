@@ -132,7 +132,7 @@ fn main(){
                     // e.dest.color = e.source.color;
                 }
             }
-            None => { break; } // this should really never execute
+            None => { break; } // this should really never execute till the end
         }
     }
     
