@@ -44,6 +44,19 @@ impl Pixel {
     }
 }
 
+impl Clone for Pixel{
+    fn clone(&self) -> Pixel {
+        Pixel{
+            r: self.r,
+            b: self.b,
+            g: self.g,
+            color: self.color,
+            x: self.x,
+            y: self.y
+        }
+    }
+}
+
 struct Point {
     x: int,
     y: int
@@ -92,92 +105,104 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 fn main(){
     let argv =  os::args();
     println(argv.to_str());
-    let length = match from_str::<int>(argv[2]) {
+
+    let pixels: ~[ ~[Pixel] ] = readImage(&argv[1]);
+
+    // width and height should be replaced by just reading them from the file
+    let width = match from_str::<int>(argv[2]) {
         Some(x) => x,
         None() => 0
     };
-    let width = match from_str::<int>(argv[3]) {
+    let height = match from_str::<int>(argv[3]) {
         Some(x) => x,
         None() => 0
     };
     
-    let pixels: ~[ ~[Pixel] ] = readImage(&argv[1]);
     let mut find_arcs: ~[ ~[arc::RWArc<Pixel>] ] =  ~[ ~[]];
-    let mut len = 0;
+    let mut heit = 0;
     let mut wid = 0;
     loop {
         loop {
-            find_arcs[len][wid] = arc::RWArc::new(pixels[len][wid]);
+            find_arcs[heit][wid] = arc::RWArc::new(pixels[heit][wid]);
                 wid+=1;
             if(wid == width) {
                 wid = 0;
                 break; 
             }
         }
-        len+=1;
-        if(len == length) {
+        heit+=1;
+        if(heit == height) {
             break; 
         }
     }
     
     let arcs = find_arcs; // now we have an immutable array that can be shared
-
-// split into threads here
     
-    let mut x= 0;
-    let mut y= 0;
-
-    let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
-    let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();
-
-    let mut newvisit: bool = true;
-
-    loop { // iterate through items in the queue, which contains all of the edges/vertices     
-        if(newvisit){
-            let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x,y-1)];
-            for &coord in neighbors.iter() {
-                let (w,z) = coord;
-                if w >=0 && w < width && z >=0 && z <= length { // bounds checking
-                    // if neighbor at coord has not been or colored
-                    if pixels[w][z].color < 0 { // then we have a new vertex
-                        queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(&pixels[x][y],&pixels[w][z])));
-                    }
-                }
-            }
-        }
-        
-        let edge = queue.maybe_pop();
-        match edge {
-            Some(e) => {
-                let mut col = 0;
-                do arcs[e.dest.x][e.dest.y].read |dest| {
-                    col = dest.color;
-                }
-                if col < 0 {
-                    // not in any tree
-                    let coord = (e.dest.x,e.dest.y);
-                    if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex
-                        visited.insert(coord,true);
-                        x = e.dest.x;
-                        y = e.dest.y;
-                        newvisit = true;
-                    } else {
-                        newvisit = false;
-                    }
-                    
-                    // use an arc to write the following
-//                    pixels[e.dest.x][e.dest.y].color = pixels[e.source.x][e.source.y].color;
-                    do arcs[e.dest.x][e.dest.y].write |dest| {
-                        do arcs[e.source.x][e.source.y].read |src| {
-                            dest.color = src.color;
+    let corners = [ (0,0),(0,width-1),(height-1,0),(height-1,width-1) ];
+    
+    for &corner in corners.iter() {
+        let (a,b) = corner;
+        let shared_arcs = arcs.clone();
+        let shared_pixels = pixels.clone();
+        do spawn { // split into threads here
+            
+            let mut x=a;
+            let mut y=b;
+            
+            let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
+            let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();
+            
+            let mut newvisit: bool = true;
+            
+            loop { // iterate through items in the queue, which contains all of the edges/vertices     
+                if(newvisit){
+                    let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x,y-1)];
+                    for &coord in neighbors.iter() {
+                        let (w,z) = coord;
+                        if w >=0 && w < width && z >=0 && z < height { // bounds checking
+                            // if neighbor at coord has not been or colored
+                            let mut col = 0;
+                            do shared_arcs[w][z].read |edg| {
+                                col = edg.color;
+                            }
+                            if col < 0 { // then we have a new vertex
+                                queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(&shared_pixels[x][y],&shared_pixels[w][z])));
+                            }
                         }
                     }
                 }
+                
+                let edge = queue.maybe_pop();
+                match edge {
+                Some(e) => {
+                        let mut col = 0;
+                        do shared_arcs[e.dest.x][e.dest.y].read |dest| {
+                        col = dest.color;
+                        }
+                        if col < 0 {
+                            // not in any tree
+                            let coord = (e.dest.x,e.dest.y);
+                            if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex
+                                visited.insert(coord,true);
+                                x = e.dest.x;
+                                y = e.dest.y;
+                            newvisit = true;
+                            } else {
+                                newvisit = false;
+                            }
+                            
+                            // use an arc to write the following
+                            //                    pixels[e.dest.x][e.dest.y].color = pixels[e.source.x][e.source.y].color;
+                            do shared_arcs[e.dest.x][e.dest.y].write |dest| {
+                                do shared_arcs[e.source.x][e.source.y].read |src| {
+                                    dest.color = src.color;
+                                }
+                            }
+                        }
+                    }
+                    None => { break; } // this should execute at the end when there are no more unvisited or uncolored nodes for a thread
+                }
             }
-            None => { break; } // this should really never execute till the end
         }
     }
-    
-    
-
 }
