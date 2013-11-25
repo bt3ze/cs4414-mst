@@ -166,7 +166,6 @@ fn main(){
                             dest.color = src.color;
                         }
                     }
-
                 }
             }
             None => { break; } // this should really never execute till the end
