@@ -10,7 +10,7 @@ A parallel MST implementation on images in Rust
 
 
 extern mod extra;
-use std::{os, num,str} ;
+use std::{os, num,hashmap,str} ;
 use extra::{arc,priority_queue};
 
 struct Pixel{
@@ -88,6 +88,7 @@ fn main(){
             find_arcs[len][wid] = arc::RWArc::new(pixels[len][wid]);
                 wid+=1;
             if(wid == width) {
+                wid = 0;
                 break; 
             }
         }
@@ -102,38 +103,39 @@ fn main(){
     let mut x= 0;
     let mut y= 0;
     let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
-
+    let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();
     loop { // iterate through items in the queue, which contains all of the edges/vertices
-
-        // add (x,y+1), (x,y-1), (x-1,y), (x+1,y) to queue if not already visited or colored
-        let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x,y-1)];
-        for &coord in neighbors.iter() {
-            let (w,z) = coord;
-            if w >=0 && w < width && z >=0 && z <= length { // bounds checking
-                // if neighbor at coord has not been visited or colored
-                if pixels[w][z].color != 0 { // then we have a new vertex
-                    // should really update this to make sure the vertex has not already been visited
-                    queue.push( Edge::new(pixels[x][y],pixels[w][z]) );
-                }
-                
-            }
-        }
         
         let edge = queue.maybe_pop();
         match edge {
             Some(e) => {
-                let col = e.dest.color;  // check e.destination's color
-                if col == 0 {
+                if e.dest.color == 0 {
                     // not in any tree
-                    x = e.dest.x;
-                    y = e.dest.y;
+                    let coord = (e.dest.x,e.dest.y);
+                    if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex
+                        visited.insert(coord,true);
+                        x = e.dest.x;
+                        y = e.dest.y;
+                        let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x,y-1)];
+                        for &coord in neighbors.iter() {
+                            let (w,z) = coord;
+                            if w >=0 && w < width && z >=0 && z <= length { // bounds checking
+                                // if neighbor at coord has not been or colored
+                                if pixels[w][z].color != 0 { // then we have a new vertex
+                                    queue.push( Edge::new(pixels[x][y],pixels[w][z]) );
+                                }
+                            }
+                        }
+                    }
+                    
                     // use an arc to write the following
                     // e.dest.color = e.source.color;
                 }
             }
-            None => { break; }
+            None => { break; } // this should really never execute
         }
     }
-
+    
+    
 
 }
