@@ -212,9 +212,9 @@ fn main(){
                         } else {
                             newvisit = false;
                         }
-                        None => { break; } // this should execute at the end when there are no more unvisited or uncolored nodes for a thread
-                    }
-                }
+                    },
+                    None => { break; } // this should execute at the end when there are no more unvisited or uncolored nodes for a thread
+                }   
             }
         }
     }
