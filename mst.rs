@@ -17,7 +17,9 @@ struct Pixel{
     r: int,
     b: int,
     g: int,
-
+    color: int,
+    x: int,
+    y: int
 }
 
 impl Pixel {
@@ -25,7 +27,10 @@ impl Pixel {
         Pixel{
             r: red,
             b: blue,
-            g: green
+            g: green,
+            color: 0,
+            x: 0,
+            y: 0
         }
     }
 }
@@ -38,7 +43,8 @@ struct Edge {
 
 impl Edge {
     fn new(s: Pixel, d: Pixel) -> Edge {
-        Edge {
+        Edge { // these need to be references to pixels, not copies.
+            // for standard prim, it's alright for now
             source: s,
             dest: d,
             cost: edgeCost(s,d)
@@ -98,13 +104,36 @@ fn main(){
     let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
 
     loop { // iterate through items in the queue, which contains all of the edges/vertices
+
         // add (x,y+1), (x,y-1), (x-1,y), (x+1,y) to queue if not already visited or colored
         let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x,y-1)];
         for &coord in neighbors.iter() {
-            // if neighbor at coord has not been visited or colored
             let (w,z) = coord;
-            queue.push( Edge::new(pixels[x][y],pixels[w][z]) );
+            if w >=0 && w < width && z >=0 && z <= length { // bounds checking
+                // if neighbor at coord has not been visited or colored
+                if pixels[w][z].color != 0 { // then we have a new vertex
+                    // should really update this to make sure the vertex has not already been visited
+                    queue.push( Edge::new(pixels[x][y],pixels[w][z]) );
+                }
+                
+            }
+        }
+        
+        let edge = queue.maybe_pop();
+        match edge {
+            Some(e) => {
+                let col = e.dest.color;  // check e.destination's color
+                if col == 0 {
+                    // not in any tree
+                    x = e.dest.x;
+                    y = e.dest.y;
+                    // use an arc to write the following
+                    // e.dest.color = e.source.color;
+                }
+            }
+            None => { break; }
         }
     }
+
 
 }
