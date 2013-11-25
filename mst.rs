@@ -9,6 +9,15 @@ A parallel MST implementation on images in Rust
 */
 
 
+/*
+some documentation:
+Pixel object is composed of r,g,b values, a color, and an x,y index that takes the place of its adjacency list
+Point is just an (x,y) value to denote a pixel's location
+Edge contains two points: source and dest, along with the edge cost between them
+
+*/
+
+
 extern mod extra;
 use std::{os, num,hashmap,str} ;
 use extra::{arc,priority_queue};
@@ -23,31 +32,45 @@ struct Pixel{
 }
 
 impl Pixel {
-    fn new(red: int, blue: int, green: int) -> Pixel {
+    fn new(red: int, blue: int, green: int, x: int, y: int) -> Pixel {
         Pixel{
             r: red,
             b: blue,
             g: green,
-            color: 0,
-            x: 0,
-            y: 0
+            color: -1,
+            x: x,
+            y: y
+        }
+    }
+}
+
+struct Point {
+    x: int,
+    y: int
+}
+
+impl Point{
+    fn new(x: int, y: int)-> Point {
+        Point {
+            x: x,
+            y: y
         }
     }
 }
 
 struct Edge {
-    source: Pixel,
-    dest: Pixel,
+    source: Point,
+    dest: Point,
     cost: float
 }
 
 impl Edge {
-    fn new(s: Pixel, d: Pixel) -> Edge {
+    fn new(s: Point, d: Point, cost: float) -> Edge {
         Edge { // these need to be references to pixels, not copies.
             // for standard prim, it's alright for now
             source: s,
             dest: d,
-            cost: edgeCost(s,d)
+            cost: cost
         }
     }
 }
@@ -58,7 +81,7 @@ impl Ord for Edge {
     }
 }
 
-fn edgeCost(a: Pixel, b: Pixel) -> float {
+fn edgeCost(a: &Pixel, b: &Pixel) -> float {
     num::sqrt( (
             a.r*a.r-b.r*b.r + a.g*a.g-b.g*b.g + a.b*a.b-b.b*b.b ) as float)
 }
@@ -102,14 +125,16 @@ fn main(){
     
     let mut x= 0;
     let mut y= 0;
+
     let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
     let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();
+
     loop { // iterate through items in the queue, which contains all of the edges/vertices
         
         let edge = queue.maybe_pop();
         match edge {
             Some(e) => {
-                if e.dest.color == 0 {
+                if e.dest.color < 0 {
                     // not in any tree
                     let coord = (e.dest.x,e.dest.y);
                     if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex
@@ -121,8 +146,8 @@ fn main(){
                             let (w,z) = coord;
                             if w >=0 && w < width && z >=0 && z <= length { // bounds checking
                                 // if neighbor at coord has not been or colored
-                                if pixels[w][z].color != 0 { // then we have a new vertex
-                                    queue.push( Edge::new(pixels[x][y],pixels[w][z]) );
+                                if pixels[w][z].color < 0 { // then we have a new vertex
+                                    queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(&pixels[x][y],&pixels[w][z])));
                                 }
                             }
                         }
