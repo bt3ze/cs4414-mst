@@ -162,10 +162,17 @@ fn main(){
                         if w >=0 && w < width && z >=0 && z < height { // bounds checking
                             // if neighbor at coord has not been or colored
                             let mut col = 0;
-                            do shared_arcs[w][z].read |edg| {
-                                col = edg.color;
+                            let mut newvertex = false;
+                            do shared_arcs[w][z].write |dest| {
+                                if dest.color < 0 {
+                                    do shared_arcs[x][y].read |src| {
+                                        dest.color = src.color;
+                                    }
+                                    newvertex = true;
+                                }
                             }
-                            if col < 0 { // then we have a new vertex
+                            
+                            if newvertex { // then we have a new vertex
                                 queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(&shared_pixels[x][y],&shared_pixels[w][z])));
                             }
                         }
@@ -186,17 +193,9 @@ fn main(){
                                 visited.insert(coord,true);
                                 x = e.dest.x;
                                 y = e.dest.y;
-                            newvisit = true;
+                                newvisit = true;
                             } else {
                                 newvisit = false;
-                            }
-                            
-                            // use an arc to write the following
-                            //                    pixels[e.dest.x][e.dest.y].color = pixels[e.source.x][e.source.y].color;
-                            do shared_arcs[e.dest.x][e.dest.y].write |dest| {
-                                do shared_arcs[e.source.x][e.source.y].read |src| {
-                                    dest.color = src.color;
-                                }
                             }
                         }
                     }
