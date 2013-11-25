@@ -201,25 +201,19 @@ fn main(){
                 
                 let edge = queue.maybe_pop();
                 match edge {
-                Some(e) => {
-                        let mut col = 0;
-                        do shared_arcs[e.dest.x][e.dest.y].read |dest| {
-                        col = dest.color;
+                    Some(e) => {
+                        // not in any tree
+                        let coord = (e.dest.x,e.dest.y);
+                        if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex. returns false if it can't return a vertex?
+                            visited.insert(coord,true);
+                            x = e.dest.x;
+                            y = e.dest.y;
+                            newvisit = true;
+                        } else {
+                            newvisit = false;
                         }
-                        if col < 0 {
-                            // not in any tree
-                            let coord = (e.dest.x,e.dest.y);
-                            if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex
-                                visited.insert(coord,true);
-                                x = e.dest.x;
-                                y = e.dest.y;
-                                newvisit = true;
-                            } else {
-                                newvisit = false;
-                            }
-                        }
+                        None => { break; } // this should execute at the end when there are no more unvisited or uncolored nodes for a thread
                     }
-                    None => { break; } // this should execute at the end when there are no more unvisited or uncolored nodes for a thread
                 }
             }
         }
