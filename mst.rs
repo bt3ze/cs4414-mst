@@ -143,12 +143,23 @@ fn main(){
     for &corner in corners.iter() {
         let (a,b) = corner;
         let shared_arcs = arcs.clone();
-        let shared_pixels = pixels.clone();
         do spawn { // split into threads here
             
             let mut x=a;
             let mut y=b;
-            
+            /*
+            weird compiler error:
+            let corners = [ (0,0),(0,width-1),(height-1,0),(height-1,width-1) ];
+            for &corner in corners.iter(){
+            do spawn {
+            let mut x = 0;
+            let mut y = 0;
+            (x,y) = corner
+                 }
+             }
+             */
+
+
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
             let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();
             
@@ -161,19 +172,28 @@ fn main(){
                         let (w,z) = coord;
                         if w >=0 && w < width && z >=0 && z < height { // bounds checking
                             // if neighbor at coord has not been or colored
-                            let mut col = 0;
                             let mut newvertex = false;
-                            do shared_arcs[w][z].write |dest| {
+                            let mut uncolored = false;
+                            do shared_arcs[w][z].read |dest| {
                                 if dest.color < 0 {
-                                    do shared_arcs[x][y].read |src| {
-                                        dest.color = src.color;
+                                    uncolored = true; }
+                            }
+                            if uncolored {
+                                do shared_arcs[w][z].write |dest| {
+                                    if dest.color < 0 {
+                                        do shared_arcs[x][y].read |src| {
+                                            dest.color = src.color;
+                                        }
+                                        newvertex = true;
                                     }
-                                    newvertex = true;
                                 }
                             }
-                            
                             if newvertex { // then we have a new vertex
-                                queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(&shared_pixels[x][y],&shared_pixels[w][z])));
+                                do shared_arcs[x][y].read |src| {
+                                    do shared_arcs[w][z].read |dest| {
+                                        queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
+                                    }
+                                }
                             }
                         }
                     }
