@@ -160,7 +160,13 @@ fn main(){
                     }
                     
                     // use an arc to write the following
-                    // e.dest.color = e.source.color;
+//                    pixels[e.dest.x][e.dest.y].color = pixels[e.source.x][e.source.y].color;
+                    do arcs[e.dest.x][e.dest.y].write |dest| {
+                        do arcs[e.source.x][e.source.y].read |src| {
+                            dest.color = src.color;
+                        }
+                    }
+
                 }
             }
             None => { break; } // this should really never execute till the end
