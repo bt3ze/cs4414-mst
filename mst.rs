@@ -121,6 +121,8 @@ fn main(){
     }
     
     let arcs = find_arcs; // now we have an immutable array that can be shared
+
+// split into threads here
     
     let mut x= 0;
     let mut y= 0;
@@ -147,7 +149,11 @@ fn main(){
         let edge = queue.maybe_pop();
         match edge {
             Some(e) => {
-                if pixels[e.dest.x][e.dest.y].color < 0 {
+                let mut col = 0;
+                do arcs[e.dest.x][e.dest.y].read |dest| {
+                    col = dest.color;
+                }
+                if col < 0 {
                     // not in any tree
                     let coord = (e.dest.x,e.dest.y);
                     if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex
