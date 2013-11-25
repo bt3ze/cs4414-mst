@@ -19,7 +19,7 @@ Edge contains two points: source and dest, along with the edge cost between them
 
 
 extern mod extra;
-use std::{os, num,hashmap,str} ;
+use std::{os, num,hashmap} ;
 use extra::{arc,priority_queue};
 
 struct Pixel{
@@ -66,8 +66,7 @@ struct Edge {
 
 impl Edge {
     fn new(s: Point, d: Point, cost: float) -> Edge {
-        Edge { // these need to be references to pixels, not copies.
-            // for standard prim, it's alright for now
+        Edge {
             source: s,
             dest: d,
             cost: cost
@@ -129,28 +128,35 @@ fn main(){
     let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
     let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();
 
-    loop { // iterate through items in the queue, which contains all of the edges/vertices
+    let mut newvisit: bool = true;
+
+    loop { // iterate through items in the queue, which contains all of the edges/vertices     
+        if(newvisit){
+            let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x,y-1)];
+            for &coord in neighbors.iter() {
+                let (w,z) = coord;
+                if w >=0 && w < width && z >=0 && z <= length { // bounds checking
+                    // if neighbor at coord has not been or colored
+                    if pixels[w][z].color < 0 { // then we have a new vertex
+                        queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(&pixels[x][y],&pixels[w][z])));
+                    }
+                }
+            }
+        }
         
         let edge = queue.maybe_pop();
         match edge {
             Some(e) => {
-                if e.dest.color < 0 {
+                if pixels[e.dest.x][e.dest.y].color < 0 {
                     // not in any tree
                     let coord = (e.dest.x,e.dest.y);
                     if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex
                         visited.insert(coord,true);
                         x = e.dest.x;
                         y = e.dest.y;
-                        let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x,y-1)];
-                        for &coord in neighbors.iter() {
-                            let (w,z) = coord;
-                            if w >=0 && w < width && z >=0 && z <= length { // bounds checking
-                                // if neighbor at coord has not been or colored
-                                if pixels[w][z].color < 0 { // then we have a new vertex
-                                    queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(&pixels[x][y],&pixels[w][z])));
-                                }
-                            }
-                        }
+                        newvisit = true;
+                    } else {
+                        newvisit = false;
                     }
                     
                     // use an arc to write the following
