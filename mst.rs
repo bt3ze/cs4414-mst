@@ -95,7 +95,7 @@ impl Ord for Edge {
 
 fn edgeCost(a: &Pixel, b: &Pixel) -> float {
     num::sqrt( (
-            a.r*a.r-b.r*b.r + a.g*a.g-b.g*b.g + a.b*a.b-b.b*b.b ) as float)
+            (a.r-b.r)*(a.r-b.r) + (a.g-b.g)*(a.g-b.g) + (a.b-b.b)*(a.b-b.b) ) as float)
 }
 
 fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
