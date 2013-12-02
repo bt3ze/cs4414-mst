@@ -4,20 +4,43 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 
 public class ImageReader {
 
-   public static void main(String[] args) throws IOException {
+   private static final String[] IMAGE_EXTS = { "jpg", "jpeg" };
 
-      BufferedImage hugeImage = ImageIO.read(ImageReader.class.getResource("step_gradient.jpg"));
+   public static void main(String[] args) throws IOException {
+   	  System.out.println("Filename: " + args[0]);
+
+   	  //Verify the resource type
+   	  File file = new File(args[0]);
+   	  String filename = file.getName();
+   	  String title = filename.substring(0, filename.lastIndexOf('.'));
+
+   	  boolean valid = false;
+      for(int i = 0; i < IMAGE_EXTS.length; i++){
+           if(filename.endsWith(IMAGE_EXTS[i])){
+        		valid = true;
+           }
+       }
+
+       if(!valid) System.exit(0);
+
+
+      //Process the resource
+      BufferedImage hugeImage = ImageIO.read(ImageReader.class.getResource(filename));
 
       long startTime = System.nanoTime();
       int[][] result = readRGB(hugeImage);
       long endTime = System.nanoTime();
       System.out.println(String.format("Processing time: %s", timeToString(endTime - startTime)));
       
-      System.out.println(String.format("2D array of pixel data:"));
-      System.out.println(array2DToString(result));
+      //System.out.println(imageToString(result));
+      imageToFile(result, title+".txt");
+      System.out.println("Image data recorded successfully");
    }
 
    private static int[][] readRGB(BufferedImage image) {
@@ -86,12 +109,12 @@ public class ImageReader {
       return minutes + "min " + seconds + "s " + millisecs + "ms";
    }
 
-   private static String array2DToString(int[][] array){
+   private static String imageToString(int[][] array){
    	  int h = array.length;
    	  if(h == 0) return "";
    	  int w = array[0].length;
    	  if(w == 0) return "";
-   	  System.out.println("dimensions " + h + "x" + w);
+   	  System.out.println("Pixel dimensions: " + h + "x" + w);
 
    	  String retVal = "";
    	  for(int row = h-4; row < h; row++){
@@ -106,4 +129,40 @@ public class ImageReader {
    	  }
    	  return retVal;
    }
+
+   private static void imageToFile(int[][] array, String filename){
+   	  int h = array.length;
+   	  if(h == 0) System.exit(0);
+   	  int w = array[0].length;
+   	  if(w == 0) System.exit(0);
+
+   	  try{
+   	  	BufferedWriter outputWriter = new BufferedWriter(new FileWriter(filename));
+
+   	  	//write array dimensions
+   	  	outputWriter.write("H" + h + "W" + w);
+   	  	outputWriter.newLine();
+
+   	  	//write pixel data on each line
+   	  	for(int row = 0; row < h; row++){
+   	  		for(int col = 0; col < w; col++){
+   	  			int rgb = array[row][col];
+   	  			int red = (rgb >> 16) & 0x000000FF;
+				int green = (rgb >> 8 ) & 0x000000FF;
+				int blue = (rgb) & 0x000000FF;
+
+				String pixelData = "R" + red + "G" + green + "B" + blue;
+				outputWriter.write(pixelData);
+				outputWriter.newLine();
+   	  		} 
+   	  	}
+   	  	outputWriter.flush();  
+  	  	outputWriter.close(); 
+  	  }catch(IOException e){
+  	  	System.out.println("Error writing to file");
+  	  	System.exit(0);
+  	  }
+   }
+
+
 }
