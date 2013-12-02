@@ -19,7 +19,7 @@ Edge contains two points: source and dest, along with the edge cost between them
 
 
 extern mod extra;
-use std::{os, num,hashmap} ;
+use std::{os, num, hashmap} ;
 use extra::{arc,priority_queue};
 
 struct Pixel{
@@ -98,8 +98,91 @@ fn edgeCost(a: &Pixel, b: &Pixel) -> float {
             (a.r-b.r)*(a.r-b.r) + (a.g-b.g)*(a.g-b.g) + (a.b-b.b)*(a.b-b.b) ) as float)
 }
 
+
+
 fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
-    ~[~[]]
+    let mut retval: ~[~[Pixel]] = ~[~[]];
+
+    let file: &str = filename.to_owned();
+    let file2: ~str = file.to_owned();
+    let split_filename: ~[&str] = file.split_iter('.').collect();
+    let file_data: &str = split_filename[0] + ".txt";
+
+    println(fmt!("The image name is [%?]", file));
+    println(fmt!("The image data will be stored at [%?]", file_data));
+
+    //read in the .txt associated with the file title
+    let path = &PosixPath(file_data);
+
+    match std::io::file_reader(path) {
+	Ok(reader) => { 
+	    //run the java program to process the image
+	    let program: &str = "java ImageReader";
+	    let argv: ~[~str] = ~[file2];
+
+	    let mut prog = std::run::Process::new(program, argv, 
+		std::run::ProcessOptions {
+			env: None,
+			dir: None,
+			in_fd: None,
+			out_fd: None,
+			err_fd: None
+		}
+	    );
+	    prog.finish();
+
+	    //parse out the array dimensions
+    	    let dimensions_str: &str = reader.read_line();
+    	    //println(dimensions_str);
+	    let mut h: int = 0;
+	    let mut w: int = 0;
+	    match dimensions_str[0] as char {
+		'H' => {
+		    let split_dim: ~[&str] = dimensions_str.split_iter('W').collect();
+		    h = from_str(split_dim[0].slice(1,split_dim[0].len())).unwrap();
+		    w = from_str(split_dim[1]).unwrap();
+		    println(fmt!("Dimensions passed: H %? W %?",h,w));
+		    //let retval: ~[ ~[Pixel, ..w], ..h];    
+		}
+		_ => {println("Dimensions corrupted! Abort");}
+	    }
+
+	    //fill in the retVal array with pixel data
+	    for row in range(0,h){
+		retval.push(~[]);
+		for col in range(0,w){
+	    	    if !reader.eof() {
+			let line: &str = reader.read_line();
+			//println(line);
+			let rpos:uint = match line.find('R') { Some(n)=>n,None=>line.len() };
+			let gpos:uint = match line.find('G') { Some(n)=>n,None=>line.len() };
+			let bpos:uint = match line.find('B') { Some(n)=>n,None=>line.len() };
+			
+			if rpos == line.len() || gpos == line.len() || bpos == line.len() {
+			    println("Pixel data corrupted! Abort");
+			}
+
+			let R:int = from_str(line.slice(rpos+1,gpos)).unwrap();
+			let G:int = from_str(line.slice(gpos+1,bpos)).unwrap();
+			let B:int = from_str(line.slice(bpos+1,line.len())).unwrap();
+
+			//println(fmt!("R %? G %? B %?",R,G,B));
+
+			//fn new(red: int, blue: int, green: int, x: int, y: int) -> Pixel {
+			retval[row].push(Pixel::new(R,G,B,col,row));
+			
+
+		    }
+		    else {
+			println("Data file corrupted! Abort");
+		    }
+		}
+	    }
+	},
+	Err(err)   => { fail!(err) }
+    }
+
+    retval
 }
 
 fn main(){
@@ -109,22 +192,35 @@ fn main(){
     let pixels: ~[ ~[Pixel] ] = readImage(&argv[1]);
 
     // width and height should be replaced by just reading them from the file
-    let width = match from_str::<int>(argv[2]) {
+    /*let width = match from_str::<int>(argv[2]) {
         Some(x) => x,
         None() => 0
     };
     let height = match from_str::<int>(argv[3]) {
         Some(x) => x,
         None() => 0
-    };
-    
+    };*/
+    let height = pixels.len() as int - 1;
+    let width = pixels[0].len() as int;
+
+    println(fmt!("Dimensions received: H %? W %?",height,width));
+
     let mut find_arcs: ~[ ~[arc::RWArc<Pixel>] ] =  ~[ ~[]];
+    for h in range(0,height){
+	find_arcs.push(~[]);
+	for w in range(0,width){
+	    println(fmt!("pix %?",pixels[h][w]));
+	    find_arcs[h].push(arc::RWArc::new(pixels[h][w]));
+	}
+    }	//runtime error after this, referring to hashmap...
+    
+  /*  let mut find_arcs: ~[ ~[arc::RWArc<Pixel>] ] =  ~[ ~[]];
     let mut heit = 0;
     let mut wid = 0;
     loop {
         loop {
             find_arcs[heit][wid] = arc::RWArc::new(pixels[heit][wid]);
-                wid+=1;
+            wid+=1;
             if(wid == width) {
                 wid = 0;
                 break; 
@@ -134,7 +230,7 @@ fn main(){
         if(heit == height) {
             break; 
         }
-    }
+    }*/
     
     let arcs = find_arcs; // now we have an immutable array that can be shared
     
