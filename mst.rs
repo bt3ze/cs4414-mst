@@ -133,7 +133,7 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 
 	    //parse out the array dimensions
     	    let dimensions_str: &str = reader.read_line();
-    	    //println(dimensions_str);
+    	    println(fmt!("dimensons: %s",dimensions_str));
 	    let mut h: int = 0;
 	    let mut w: int = 0;
 	    match dimensions_str[0] as char {
@@ -209,7 +209,7 @@ fn main(){
     for h in range(0,height){
 	find_arcs.push(~[]);
 	for w in range(0,width){
-	    println(fmt!("pix %?",pixels[h][w]));
+//	    println(fmt!("pix %?",pixels[h][w]));
 	    find_arcs[h].push(arc::RWArc::new(pixels[h][w]));
 	}
     }	//runtime error after this, referring to hashmap...
@@ -257,13 +257,13 @@ fn main(){
 
 
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
-            let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();
-            
+            let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();            
             let mut newvisit: bool = true;
             
             loop { // iterate through items in the queue, which contains all of the edges/vertices     
                 if(newvisit){
-                    let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x,y-1)];
+                    println(fmt!("new visit!: %i %i",x,y));
+                    let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x-1,y)];
                     for &coord in neighbors.iter() {
                         let (w,z) = coord;
                         if w >=0 && w < width && z >=0 && z < height { // bounds checking
@@ -300,7 +300,9 @@ fn main(){
                     Some(e) => {
                         // not in any tree
                         let coord = (e.dest.x,e.dest.y);
-                        if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex. returns false if it can't return a vertex?
+                        println(fmt!("before runtime error? %?",coord));
+                        if !visited.contains_key(&coord){
+//if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex. returns false if it can't return a vertex?
                             visited.insert(coord,true);
                             x = e.dest.x;
                             y = e.dest.y;
