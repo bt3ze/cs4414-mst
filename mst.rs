@@ -210,6 +210,15 @@ fn main(){
     
     let corners = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1) ];
     
+    let mut color_index = 0;
+    for &corner in corners.iter(){
+        let (a,b) = corner;
+        arcs[a][b].write |pix| {
+            pix.color = color_index;
+        }
+        color_index+=1;
+    }
+    
     for &corner in corners.iter() {
         let (a,b) = corner;
         let shared_arcs = arcs.clone();
@@ -263,7 +272,7 @@ fn main(){
                 let edge = queue.maybe_pop();
                 match edge {
                     Some(e) => {
-                        println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
+//                        println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
                         // not in any tree
                         let coord = (e.dest.x,e.dest.y);
 //                        println(fmt!("before runtime error? %?",coord));
