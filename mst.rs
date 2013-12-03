@@ -213,7 +213,7 @@ fn main(){
     let mut color_index = 0;
     for &corner in corners.iter(){
         let (a,b) = corner;
-        arcs[a][b].write |pix| {
+        do arcs[a][b].write |pix| {
             pix.color = color_index;
         }
         color_index+=1;
