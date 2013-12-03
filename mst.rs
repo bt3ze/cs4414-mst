@@ -104,7 +104,7 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
     let mut retval: ~[~[Pixel]] = ~[];
 
     let file: &str = filename.to_owned();
-    let file2: ~str = file.to_owned();
+//    let file2: ~str = file.to_owned();
     let split_filename: ~[&str] = file.split_iter('.').collect();
     let file_data: &str = split_filename[0] + ".txt";
 
@@ -231,8 +231,14 @@ fn main(){
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
             let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();            
             let mut newvisit: bool = true;
+            let mut boundaries: ~[Edge] = ~[];
+            let mut color: int = -1;
+            do shared_arcs[b][a].read |pix| {
+                color = pix.color;
+            }
+            
 
-            println(fmt!("start at (%i,%i)",c,d));
+            println(fmt!("start at (%i,%i): color = %i",c,d,color));
 
             loop { // iterate through items in the queue, which contains all of the edges/vertices     
                 if(newvisit){
@@ -241,7 +247,7 @@ fn main(){
                     for &coord in neighbors.iter() {
                         let (w,z) = coord;
                         if w >=0 && w < width && z >=0 && z < height { // bounds checking
-                            // if neighbor at coord has not been or colored
+                            // if neighbor at coord has not been colored
                             let mut newvertex = false;
                             let mut uncolored = false;
                             do shared_arcs[z][w].read |dest| {
@@ -252,14 +258,25 @@ fn main(){
                             if uncolored {
                                 do shared_arcs[z][w].write |dest| {
                                     if dest.color < 0 {
-                                        do shared_arcs[y][x].read |src| {
-                                            dest.color = src.color;
-                                        }
+                                        dest.color = color;
+//                                        do shared_arcs[y][x].read |src| {
+ //                                           dest.color = src.color;
+  //                                      }
                                         newvertex = true;
+                                    } else {
+                                        // edge has crossed a cut during a race since we last checked if it was uncolored
+                                        uncolored = false;
                                     }
                                 }
-                            } else {
+                            }
+                            if !uncolored { // this is an else to the above if
                                 // we have found an edge that crosses a cut!
+                                // here, somehow collect the edges that cross our cut
+                                do shared_arcs[y][x].read |src| {
+                                    do shared_arcs[z][w].read |dest| {
+                                        boundaries.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
+                                    }
+                                }  
                             }
                             if newvertex { // then we have a new vertex
                                 do shared_arcs[y][x].read |src| {
@@ -271,7 +288,7 @@ fn main(){
                         }
                     }
                 }
-                
+                 
                 let edge = queue.maybe_pop();
                 match edge {
                     Some(e) => {
@@ -294,6 +311,17 @@ fn main(){
                 }   
             }
             
+            for e in boundaries.iter() {
+                println(fmt!("(%i,%i:%i) boundary (%i,%i)-%f-(%i,%i)",c,d,color,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
+            }
+        }
+    }
+    
+    for h in range(0,height){
+        for w in range(0,width){
+            do arcs[h][w].read |pix| {
+                println(fmt!("color(%i,%i) %i",w,h,pix.color));
+	    }
         }
     }
 }
