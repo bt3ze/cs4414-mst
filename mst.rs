@@ -101,7 +101,7 @@ fn edgeCost(a: &Pixel, b: &Pixel) -> float {
 
 
 fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
-    let mut retval: ~[~[Pixel]] = ~[~[]];
+    let mut retval: ~[~[Pixel]] = ~[];
 
     let file: &str = filename.to_owned();
     let file2: ~str = file.to_owned();
@@ -148,8 +148,11 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 	    }
 
 	    //fill in the retVal array with pixel data
+            //let mut rowfirst = false;
 	    for row in range(0,h){
-		retval.push(~[]);
+//                if(!rowfirst) {
+                retval.push(~[]);
+                //rowfirst = true; }
 		for col in range(0,w){
 	    	    if !reader.eof() {
 			let line: &str = reader.read_line();
@@ -190,30 +193,20 @@ fn main(){
     println(argv.to_str());
 
     let pixels: ~[ ~[Pixel] ] = readImage(&argv[1]);
-
-    // width and height should be replaced by just reading them from the file
-    /*let width = match from_str::<int>(argv[2]) {
-        Some(x) => x,
-        None() => 0
-    };
-    let height = match from_str::<int>(argv[3]) {
-        Some(x) => x,
-        None() => 0
-    };*/
-    let height = pixels.len() as int - 1;
+    let height = pixels.len() as int;
     let width = pixels[0].len() as int;
 
     println(fmt!("Dimensions received: H %? W %?",height,width));
 
-    let mut find_arcs: ~[ ~[arc::RWArc<Pixel>] ] =  ~[ ~[]];
+    let mut find_arcs: ~[ ~[arc::RWArc<Pixel>] ] =  ~[];
     for h in range(0,height){
 	find_arcs.push(~[]);
-	for w in range(0,width){
-//	    println(fmt!("pix %?",pixels[h][w]));
+        for w in range(0,width){
+            println(fmt!("pix %?",pixels[h][w]));
 	    find_arcs[h].push(arc::RWArc::new(pixels[h][w]));
 	}
-    }	//runtime error after this, referring to hashmap...
-    
+    }
+
   /*  let mut find_arcs: ~[ ~[arc::RWArc<Pixel>] ] =  ~[ ~[]];
     let mut heit = 0;
     let mut wid = 0;
@@ -234,13 +227,14 @@ fn main(){
     
     let arcs = find_arcs; // now we have an immutable array that can be shared
     
-    let corners = [ (0,0),(0,width-1),(height-1,0),(height-1,width-1) ];
+    let corners = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1) ];
     
     for &corner in corners.iter() {
         let (a,b) = corner;
         let shared_arcs = arcs.clone();
         do spawn { // split into threads here
-            
+            let c = a;
+            let d = b;
             let mut x=a;
             let mut y=b;
             /*
@@ -259,10 +253,12 @@ fn main(){
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
             let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();            
             let mut newvisit: bool = true;
-            
+
+            println(fmt!("start at (%i,%i)",c,d));
+
             loop { // iterate through items in the queue, which contains all of the edges/vertices     
                 if(newvisit){
-                    println(fmt!("new visit!: %i %i",x,y));
+                   println(fmt!("new visit!: (%i,%i) : (%i,%i)",c,d,x,y));
                     let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x-1,y)];
                     for &coord in neighbors.iter() {
                         let (w,z) = coord;
@@ -270,14 +266,14 @@ fn main(){
                             // if neighbor at coord has not been or colored
                             let mut newvertex = false;
                             let mut uncolored = false;
-                            do shared_arcs[w][z].read |dest| {
+                            do shared_arcs[z][w].read |dest| {
                                 if dest.color < 0 {
                                     uncolored = true; }
                             }
                             if uncolored {
-                                do shared_arcs[w][z].write |dest| {
+                                do shared_arcs[z][w].write |dest| {
                                     if dest.color < 0 {
-                                        do shared_arcs[x][y].read |src| {
+                                        do shared_arcs[y][x].read |src| {
                                             dest.color = src.color;
                                         }
                                         newvertex = true;
@@ -285,8 +281,8 @@ fn main(){
                                 }
                             }
                             if newvertex { // then we have a new vertex
-                                do shared_arcs[x][y].read |src| {
-                                    do shared_arcs[w][z].read |dest| {
+                                do shared_arcs[y][x].read |src| {
+                                    do shared_arcs[z][w].read |dest| {
                                         queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
                                     }
                                 }
@@ -300,13 +296,14 @@ fn main(){
                     Some(e) => {
                         // not in any tree
                         let coord = (e.dest.x,e.dest.y);
-                        println(fmt!("before runtime error? %?",coord));
+//                        println(fmt!("before runtime error? %?",coord));
                         if !visited.contains_key(&coord){
 //if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex. returns false if it can't return a vertex?
                             visited.insert(coord,true);
                             x = e.dest.x;
                             y = e.dest.y;
                             newvisit = true;
+//                            println(fmt!("%? %f",coord,e.cost));
                         } else {
                             newvisit = false;
                         }
