@@ -202,28 +202,10 @@ fn main(){
     for h in range(0,height){
 	find_arcs.push(~[]);
         for w in range(0,width){
-            println(fmt!("pix %?",pixels[h][w]));
+ //           println(fmt!("pix %?",pixels[h][w]));
 	    find_arcs[h].push(arc::RWArc::new(pixels[h][w]));
 	}
     }
-
-  /*  let mut find_arcs: ~[ ~[arc::RWArc<Pixel>] ] =  ~[ ~[]];
-    let mut heit = 0;
-    let mut wid = 0;
-    loop {
-        loop {
-            find_arcs[heit][wid] = arc::RWArc::new(pixels[heit][wid]);
-            wid+=1;
-            if(wid == width) {
-                wid = 0;
-                break; 
-            }
-        }
-        heit+=1;
-        if(heit == height) {
-            break; 
-        }
-    }*/
     
     let arcs = find_arcs; // now we have an immutable array that can be shared
     
@@ -237,18 +219,6 @@ fn main(){
             let d = b;
             let mut x=a;
             let mut y=b;
-            /*
-            weird compiler error:
-            let corners = [ (0,0),(0,width-1),(height-1,0),(height-1,width-1) ];
-            for &corner in corners.iter(){
-            do spawn {
-            let mut x = 0;
-            let mut y = 0;
-            (x,y) = corner
-                 }
-             }
-             */
-
 
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
             let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();            
@@ -258,7 +228,7 @@ fn main(){
 
             loop { // iterate through items in the queue, which contains all of the edges/vertices     
                 if(newvisit){
-                   println(fmt!("new visit!: (%i,%i) : (%i,%i)",c,d,x,y));
+                   println(fmt!("(%i,%i) : (%i,%i)",c,d,x,y));
                     let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x-1,y)];
                     for &coord in neighbors.iter() {
                         let (w,z) = coord;
@@ -294,6 +264,7 @@ fn main(){
                 let edge = queue.maybe_pop();
                 match edge {
                     Some(e) => {
+                        println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
                         // not in any tree
                         let coord = (e.dest.x,e.dest.y);
 //                        println(fmt!("before runtime error? %?",coord));
@@ -311,6 +282,7 @@ fn main(){
                     None => { break; } // this should execute at the end when there are no more unvisited or uncolored nodes for a thread
                 }   
             }
+            
         }
     }
 }
