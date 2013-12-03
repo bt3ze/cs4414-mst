@@ -117,9 +117,8 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
     match std::io::file_reader(path) {
 	Ok(reader) => { 
 	    //run the java program to process the image
-	    let program: &str = "java ImageReader";
+/*	    let program: &str = "java ImageReader";
 	    let argv: ~[~str] = ~[file2];
-
 	    let mut prog = std::run::Process::new(program, argv, 
 		std::run::ProcessOptions {
 			env: None,
@@ -130,7 +129,7 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 		}
 	    );
 	    prog.finish();
-
+*/
 	    //parse out the array dimensions
     	    let dimensions_str: &str = reader.read_line();
     	    println(fmt!("dimensons: %s",dimensions_str));
@@ -269,7 +268,7 @@ fn main(){
                         let coord = (e.dest.x,e.dest.y);
 //                        println(fmt!("before runtime error? %?",coord));
                         if !visited.contains_key(&coord){
-//if *visited.get(&coord) == false { // use visited hashmap to figure out if we're at a new vertex. returns false if it can't return a vertex?
+ // use visited hashmap to figure out if we're at a new vertex.
                             visited.insert(coord,true);
                             x = e.dest.x;
                             y = e.dest.y;
