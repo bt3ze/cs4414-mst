@@ -259,9 +259,6 @@ fn main(){
                                 do shared_arcs[z][w].write |dest| {
                                     if dest.color < 0 {
                                         dest.color = color;
-//                                        do shared_arcs[y][x].read |src| {
- //                                           dest.color = src.color;
-  //                                      }
                                         newvertex = true;
                                     } else {
                                         // edge has crossed a cut during a race since we last checked if it was uncolored
@@ -274,7 +271,9 @@ fn main(){
                                 // here, somehow collect the edges that cross our cut
                                 do shared_arcs[y][x].read |src| {
                                     do shared_arcs[z][w].read |dest| {
-                                        boundaries.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
+//                                        if dest.color != color {
+                                            boundaries.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
+  //                                      }
                                     }
                                 }  
                             }
