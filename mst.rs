@@ -240,46 +240,48 @@ fn main(){
 
             println(fmt!("start at (%i,%i): color = %i",c,d,color));
 
-            loop { // iterate through items in the queue, which contains all of the edges/vertices     
-                if(newvisit){
-//                   println(fmt!("(%i,%i) : (%i,%i)",c,d,x,y));
-                    let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x-1,y)];
+            loop {
+                //  at most once each:
+                //   visit the next vertex (determined by the last edge we chose or the starting vertex) to claim its neighbors and add its edges to our queue
+                //   pop the next edge off the queue, which contains all of the edges between vertices claimed by the local thread
+
+                if(newvisit){ // if the next vertex has not previously been visited to claim neighbors and add edges
+                    let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x-1,y)]; // potential neighbors
                     for &coord in neighbors.iter() {
                         let (w,z) = coord;
-                        if w >=0 && w < width && z >=0 && z < height { // bounds checking
-                            // if neighbor at coord has not been colored
+                        if w >=0 && w < width && z >=0 && z < height { // bounds checking on neighbors to only select valid edges
                             let mut newvertex = false;
                             let mut colored = false;
                             do shared_arcs[z][w].read |dest| {
                                 if dest.color >= 0 {
-                                    colored = true;
+                                    colored = true; //vertex has been previously claimed
                                 }                         
                             }
-                            if !colored {
+                            if !colored { // this thread will claim the unclaimed vertex
                                 do shared_arcs[z][w].write |dest| {
                                     if dest.color < 0 {
                                         dest.color = color;
                                         newvertex = true;
                                     } else {
-                                        // edge has crossed a cut during a race since we last checked if it was uncolored
+                                        // edge has been claimed during a race since we last checked. add to supervertex boundary
                                         colored = true;
                                     }
                                 }
                             }
-                            if colored { // this is an else to the above if
+                            if colored {
                                 // we have found an edge that crosses a cut!
-                                // here, somehow collect the edges that cross our cut
+                                // here, somehow collect these edges for contraction later
                                 do shared_arcs[y][x].read |src| {
                                     do shared_arcs[z][w].read |dest| {
                                         if dest.color != color {
                                             boundaries.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
                                             println(fmt!("%?\n-->%?",src,dest));
- 
                                         }
                                     }
                                 }  
                             }
-                            if newvertex { // then we have a new vertex
+                            if newvertex { // we have an unvisited but previously claimed vertex
+                                // add the edge to our local edges queue
                                 do shared_arcs[y][x].read |src| {
                                     do shared_arcs[z][w].read |dest| {
                                         queue.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
@@ -290,20 +292,17 @@ fn main(){
                     }
                 }
                  
-                let edge = queue.maybe_pop();
+                let edge = queue.maybe_pop(); // should fail only when we've exhausted all the edges in our queue, i.e. this thread is done running Prim
                 match edge {
                     Some(e) => {
                         println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
-                        // not in any tree
                         let coord = (e.dest.x,e.dest.y);
-//                        println(fmt!("before runtime error? %?",coord));
                         if !visited.contains_key(&coord){
- // use visited hashmap to figure out if we're at a new vertex.
-                            visited.insert(coord,true);
-                            x = e.dest.x;
+                            // use visited hashmap to figure out if we're at a new vertex or a previously seen one
+                            visited.insert(coord,true); //add to growing spanning forest
+                            x = e.dest.x; // update search coordinates for next iteration
                             y = e.dest.y;
-                            newvisit = true;
-//                            println(fmt!("%? %f",coord,e.cost));
+                            newvisit = true; // update flag to claim new vertex's neighbors
                         } else {
                             newvisit = false;
                         }
