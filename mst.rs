@@ -231,7 +231,7 @@ fn main(){
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
             let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();            
             let mut newvisit: bool = true;
-            let mut boundaries: ~[Edge] = ~[];
+            let mut boundaries: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
             let mut color: int = -1;
             do shared_arcs[b][a].read |pix| {
                 color = pix.color;
@@ -275,7 +275,7 @@ fn main(){
                                     do shared_arcs[z][w].read |dest| {
                                         if dest.color != color {
                                             boundaries.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
-                                            println(fmt!("%?\n-->%?",src,dest));
+                                            // println(fmt!("%?\n-->%?",src,dest));
                                         }
                                     }
                                 }  
@@ -295,7 +295,7 @@ fn main(){
                 let edge = queue.maybe_pop(); // should fail only when we've exhausted all the edges in our queue, i.e. this thread is done running Prim
                 match edge {
                     Some(e) => {
-                        println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
+                        //println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
                         let coord = (e.dest.x,e.dest.y);
                         if !visited.contains_key(&coord){
                             // use visited hashmap to figure out if we're at a new vertex or a previously seen one
@@ -311,16 +311,27 @@ fn main(){
                 }   
             }
             
-            for e in boundaries.iter() {
-                println(fmt!("(%i,%i:%i) boundary (%i,%i)-%f-(%i,%i)",c,d,color,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
+            loop {
+                match boundaries.maybe_pop() {
+                    Some(e) => 
+                        {
+                        do shared_arcs[e.dest.y][e.dest.x].read |dest| {
+                            do shared_arcs[e.source.y][e.source.x].read |src| {
+                                println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));
+                            }
+                        }    
+                    }
+                    None => { break; }
+                }
             }
+
         }
     }
     
     for h in range(0,height){
         for w in range(0,width){
             do arcs[h][w].read |pix| {
-                println(fmt!("color(%i,%i) %i",w,h,pix.color));
+        //        println(fmt!("color(%i,%i) %i",w,h,pix.color));
 	    }
         }
     }
