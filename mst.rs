@@ -89,7 +89,7 @@ impl Edge {
 
 impl Ord for Edge {
     fn lt(&self, other: &Edge) -> bool {
-        self.cost < other.cost
+        self.cost > other.cost
     }
 }
 
@@ -236,7 +236,7 @@ fn main(){
 
             loop { // iterate through items in the queue, which contains all of the edges/vertices     
                 if(newvisit){
-                   println(fmt!("(%i,%i) : (%i,%i)",c,d,x,y));
+//                   println(fmt!("(%i,%i) : (%i,%i)",c,d,x,y));
                     let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x-1,y)];
                     for &coord in neighbors.iter() {
                         let (w,z) = coord;
@@ -246,7 +246,8 @@ fn main(){
                             let mut uncolored = false;
                             do shared_arcs[z][w].read |dest| {
                                 if dest.color < 0 {
-                                    uncolored = true; }
+                                    uncolored = true;
+                                }                         
                             }
                             if uncolored {
                                 do shared_arcs[z][w].write |dest| {
@@ -257,6 +258,8 @@ fn main(){
                                         newvertex = true;
                                     }
                                 }
+                            } else {
+                                // we have found an edge that crosses a cut!
                             }
                             if newvertex { // then we have a new vertex
                                 do shared_arcs[y][x].read |src| {
@@ -272,7 +275,7 @@ fn main(){
                 let edge = queue.maybe_pop();
                 match edge {
                     Some(e) => {
-//                        println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
+                        println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
                         // not in any tree
                         let coord = (e.dest.x,e.dest.y);
 //                        println(fmt!("before runtime error? %?",coord));

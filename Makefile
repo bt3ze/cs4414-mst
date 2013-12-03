@@ -1,15 +1,17 @@
-all: prim img boruvka
+all: mst images
 
-mst: img sample prim
+mst: prim
 
-img: ImageReader.class ImageReader.java
+images: gradient sample corners
+
+gradient: ImageReader.class ImageReader.java
 	java ImageReader step_gradient.jpg
 
 sample: ImageReader.class ImageReader.java
 	java ImageReader sample.jpg
 
+corners: ImageReader.class ImageReader.java
+	java ImageReader small-corners.jpg
+
 prim: mst.rs
 	rustc mst.rs
-
-boruvka: boruvka.rs
-	rustc boruvka.rs
