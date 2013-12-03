@@ -249,31 +249,33 @@ fn main(){
                         if w >=0 && w < width && z >=0 && z < height { // bounds checking
                             // if neighbor at coord has not been colored
                             let mut newvertex = false;
-                            let mut uncolored = false;
+                            let mut colored = false;
                             do shared_arcs[z][w].read |dest| {
-                                if dest.color < 0 {
-                                    uncolored = true;
+                                if dest.color >= 0 {
+                                    colored = true;
                                 }                         
                             }
-                            if uncolored {
+                            if !colored {
                                 do shared_arcs[z][w].write |dest| {
                                     if dest.color < 0 {
                                         dest.color = color;
                                         newvertex = true;
                                     } else {
                                         // edge has crossed a cut during a race since we last checked if it was uncolored
-                                        uncolored = false;
+                                        colored = true;
                                     }
                                 }
                             }
-                            if !uncolored { // this is an else to the above if
+                            if colored { // this is an else to the above if
                                 // we have found an edge that crosses a cut!
                                 // here, somehow collect the edges that cross our cut
                                 do shared_arcs[y][x].read |src| {
                                     do shared_arcs[z][w].read |dest| {
-//                                        if dest.color != color {
+                                        if dest.color != color {
                                             boundaries.push( Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest)));
-  //                                      }
+                                            println(fmt!("%?\n-->%?",src,dest));
+ 
+                                        }
                                     }
                                 }  
                             }
