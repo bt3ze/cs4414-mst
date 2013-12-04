@@ -99,24 +99,24 @@ fn edgeCost(a: &Pixel, b: &Pixel) -> float {
             (a.r-b.r)*(a.r-b.r) + (a.g-b.g)*(a.g-b.g) + (a.b-b.b)*(a.b-b.b) ) as float)
 }
 
-fn findParent(map: &arc::RWArc<~[int]>, a: int) -> int {
-    do map.read() |colors| {
-        if colors[a] < 0 {
+fn findParent(map: &~[int], a: int) -> int {
+ //   do map.read() |colors| {
+        if map[a] < 0 {
             a
         } else {
-            findParent(map, colors[a])  
+            findParent(map, map[a])  
         }
-    }
+  //  }
 }
 
-fn setParent(map: &arc::RWArc<~[int]>, ind: int, val: int) {
+fn setParent(colors: &mut ~[int], ind: int, val: int) {
     let mut tmp: int = -1;
-    do map.write() |colors| {
-        tmp = colors[ind];
-        colors[ind] = val;
-    }
+ //   do map.write() |colors| {
+    tmp = colors[ind];
+    colors[ind] = val;
+  //  }
     if tmp >= 0 {
-        setParent(map, tmp, val);
+        setParent(colors, tmp, val);
     }
 }
 
@@ -129,7 +129,7 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
     let file_data: &str = split_filename[0] + ".txt";
 
     println(fmt!("The image name is [%?]", file));
-    println(fmt!("The image data will be stored at [%?]", file_data));
+//    println(fmt!("The image data will be stored at [%?]", file_data));
 
     //read in the .txt associated with the file title
     let path = &PosixPath(file_data);
@@ -152,7 +152,7 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 */
 	    //parse out the array dimensions
     	    let dimensions_str: &str = reader.read_line();
-    	    println(fmt!("dimensons: %s",dimensions_str));
+   	    println(fmt!("dimensons: %s",dimensions_str));
 	    let mut h: int = 0;
 	    let mut w: int = 0;
 	    match dimensions_str[0] as char {
@@ -160,7 +160,7 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 		    let split_dim: ~[&str] = dimensions_str.split_iter('W').collect();
 		    h = from_str(split_dim[0].slice(1,split_dim[0].len())).unwrap();
 		    w = from_str(split_dim[1]).unwrap();
-		    println(fmt!("Dimensions passed: H %? W %?",h,w));
+		//    println(fmt!("Dimensions passed: H %? W %?",h,w));
 		    //let retval: ~[ ~[Pixel, ..w], ..h];    
 		}
 		_ => {println("Dimensions corrupted! Abort");}
@@ -208,7 +208,7 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 
 fn main(){
     let argv =  os::args();
-    println(argv.to_str());
+ //   println(argv.to_str());
 
     let pixels: ~[ ~[Pixel] ] = readImage(&argv[1]);
     let height = pixels.len() as int;
@@ -227,14 +227,14 @@ fn main(){
     
     let arcs = find_arcs; // now we have an immutable array that can be shared
     
-    let mut colormap:  ~[int] = ~[];
-    let corners = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1) ];
-    let numnodes: uint = corners.len();
+    let mut colormap: ~[int] = ~[];
+    let nodes = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1) ];
+    let numnodes: uint = nodes.len();
     println(fmt!("number of nodes: %u",numnodes));
 
     let mut color_index = 0;
-    for &corner in corners.iter(){
-        let (a,b) = corner;
+    for &node in nodes.iter(){
+        let (a,b) = node;
         do arcs[b][a].write |pix| {
             pix.color = color_index;
         }
@@ -242,21 +242,21 @@ fn main(){
         colormap.push(-1);
     }
     
-    let colormap_arc: arc::RWArc<~[int]> =  arc::RWArc::new(colormap);
+//    let colormap_arc: arc::RWArc<~[int]> =  arc::RWArc::new(colormap);
     let boundaryqueue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
     let boundary_arc: arc::RWArc<priority_queue::PriorityQueue<Edge>> = arc::RWArc::new(boundaryqueue);
     
     let (port, chan) = stream();
     let chan = SharedChan::new(chan);
 
-    for &corner in corners.iter() {
-        let (a,b) = corner;
+    for &node in nodes.iter() {
+        let (a,b) = node;
         let shared_arcs = arcs.clone();
         let shared_boundaries = boundary_arc.clone();
         let child_chan = chan.clone();
         do spawn { // split into threads here
-            let c = a;
-            let d = b;
+//            let c = a;
+//            let d = b;
             let mut x=a;
             let mut y=b;
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
@@ -268,7 +268,7 @@ fn main(){
                 color = pix.color;
             }
            
-            println(fmt!("start at (%i,%i): color = %i",c,d,color));
+//            println(fmt!("start at (%i,%i): color = %i",c,d,color));
 
             loop {
                 //  at most once each:
@@ -326,6 +326,7 @@ fn main(){
                 match edge {
                     Some(e) => {
                         //println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
+                        println(fmt!("(%i,%i),(%i,%i):%f\n",e.source.x,e.source.y,e.dest.x,e.dest.y,e.cost));
                         let coord = (e.dest.x,e.dest.y);
                         if !visited.contains_key(&coord){
                             // use visited hashmap to figure out if we're at a new vertex or a previously seen one
@@ -353,7 +354,7 @@ fn main(){
                     }
                 }
             }
-            child_chan.send(0);
+            child_chan.send(0); // tell master that we're done
         }
     }
     
@@ -370,12 +371,13 @@ fn main(){
                 Some(e) => {
                      do arcs[e.dest.y][e.dest.x].read |dest| {
                         do arcs[e.source.y][e.source.x].read |src| {
-                            println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));       
-                            let dest_parent = findParent(&colormap_arc,dest.color);
-                            let src_parent =  findParent(&colormap_arc,src.color);
+//                            println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));       
+                            let dest_parent = findParent(&colormap,dest.color);
+                            let src_parent =  findParent(&colormap,src.color);
                             if src_parent != dest_parent {
-                                setParent(&colormap_arc,src.color,dest_parent);
-                                println(fmt!("bridge: (%i,%i:%i->%i)-(%i,%i:%i->%i) : %f",src.x,src.y,src.color,src_parent,dest.x,dest.y,dest.color,dest_parent, e.cost));
+                                setParent(&mut colormap,src.color,dest_parent);
+                //                println(fmt!("bridge: (%i,%i:%i->%i)-(%i,%i:%i->%i) : %f",src.x,src.y,src.color,src_parent,dest.x,dest.y,dest.color,dest_parent, e.cost));
+                                println(fmt!("(%i,%i),(%i,%i):%f",src.x,src.y,dest.x,dest.y,e.cost));
                                 bridges +=1;
                             }
                         }    
