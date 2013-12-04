@@ -221,8 +221,11 @@ fn main(){
     let arcs = find_arcs; // now we have an immutable array that can be shared
     
     let mut colormap: ~[int] = ~[];
-    let nodes = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1), (width/2,height/2) ];
-    let numnodes: uint = nodes.len();
+	let nodes =[(0,0),(width-1,height-1),(width/2,height/2)];
+//	let nodes =[(0,0),(width-1,0),(0,height-1),(width-1,height-1)];
+//    let nodes = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1), (width/2,height/2) ];
+//	let nodes = [(0,0)];
+   let numnodes: uint = nodes.len();
     println(fmt!("number of nodes: %u",numnodes));
 
     let mut color_index = 0;
