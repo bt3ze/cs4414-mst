@@ -15,9 +15,6 @@ import javax.imageio.ImageIO;
 
 public class MSTVisualizer {
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
 		BufferedImage image = null;
 
@@ -33,8 +30,9 @@ public class MSTVisualizer {
 		try {
 
 			//Read and parse input
-			//File file = new File(args[0]);
-			File file = new File("sample.out.txt");
+			File file = new File(args[0]);
+			System.out.println("File opened: "+ file.getPath());
+			//File file = new File("sample.out.txt");
 			Scanner reader = new Scanner(new FileInputStream(file));
 			int height = 0; 
 			int width = 0;
@@ -77,11 +75,10 @@ public class MSTVisualizer {
 			System.out.println("Malformed lines skipped: "+malformedLinesSkipped);
 
 
-
-			//Initialize image
-			URL url = new URL("http://www.mkyong.com/image/mypic.jpg");
+			//Testing
+			/*URL url = new URL("http://www.mkyong.com/image/mypic.jpg");
 			image = ImageIO.read(url);
-			/*byte imageData[] = ((DataBufferByte)image.getData().getDataBuffer()).getData();
+			byte imageData[] = ((DataBufferByte)image.getData().getDataBuffer()).getData();
 			int numPix = 0;
 			for(int i = 0; i < imageData.length; i+=3){
 				byte colorNum = imageData[i];
@@ -95,21 +92,16 @@ public class MSTVisualizer {
 			System.out.println("NumPix expected from file: "+(float)imageData.length/3);
 			System.out.println("NumPix actual: "+numPix);*/
 
-			//image = new BufferedImage(wr.getWidth(), wr.getHeight(), image.getType());
+
+			//Initialize output image buffer
 			image = new BufferedImage(width, height, image.getType());
-			//final int w = image.getWidth();
-			//final int h = image.getHeight();
 			WritableRaster wr = (WritableRaster) image.getData();
 			
 			//Set all pixels initially to white
-			for(int x = 0; x < height; x++){
-				for(int y = 0; y < width; y++){
-					float f = (float)255;
-					float [] temp = new float[3];
-					temp[0] = f;
-					temp[1] = f;
-					temp[2] = f;
-					wr.setPixel(x, y, temp);
+			System.out.println("H"+height+"W"+width);
+			for(int h = 0; h < height; h++){
+				for(int w = 0; w < width; w++){
+					wr.setPixel(w, h, Color(255,255,255));
 				}
 			}
 			
@@ -119,33 +111,22 @@ public class MSTVisualizer {
 
 			int heavyEdges = 0;
 			for(int i = 0; i < edges.size(); i++){
-				if(edges.get(i).getCost() > heavyCutoff){
-					//System.out.println(edges.get(i).toString());
-					
-					//Set starting pixels of heavy edges to black
+				if(edges.get(i).getCost() > heavyCutoff){					
 					int startX = edges.get(i).getStartX();
 					int startY = edges.get(i).getStartY();
 					int endX = edges.get(i).getEndX();
 					int endY = edges.get(i).getEndY();
 					
-					float f = (float)0;
-					float [] temp = new float[3];
-					temp[0] = f;
-					temp[1] = f;
-					temp[2] = f;
-					wr.setPixel(startX, startY, temp);
+					wr.setPixel(startX, startY, Color(0,0,0));
+					wr.setPixel(endX, endY, Color(255,0,0));
 					
-					/*pixelArray[3*(width*startY+startX)] = 0;
-					pixelArray[3*(width*startY+startX)] = 0;
-					pixelArray[3*(width*startY+startX)] = 0;*/
-
 					heavyEdges++;
 				}
 			}
 			System.out.println("Heavy edges found: "+heavyEdges);
 
+
 			//Depth-first search to recolor pixels
-			//Note: location of pixel(x,y) in pixels = y*width+x
 			for(int i = 0; i < edges.size(); i++){
 				//System.out.println(edges.get(i).toString());
 			}
@@ -167,6 +148,10 @@ public class MSTVisualizer {
 			e.printStackTrace();
 		}
 		System.out.println("Done");
+	}
+
+	private static float[] Color(int r, int g, int b){
+		return new float[]{(float)r,(float)g,(float)b};
 	}
 
 }
