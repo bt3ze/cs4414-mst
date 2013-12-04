@@ -103,7 +103,7 @@ fn findParent(map: &arc::RWArc<~[int]>, a: int) -> int {
         if colors[a] < 0 {
             a
         } else {
-            findParent(map, colors[a])
+            findParent(map, colors[a])  
         }
     }
 }
@@ -190,8 +190,7 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 			//println(fmt!("R %? G %? B %?",R,G,B));
 
 			//fn new(red: int, blue: int, green: int, x: int, y: int) -> Pixel {
-			retval[row].push(Pixel::new(R,G,B,col,row));
-			
+			retval[row].push(Pixel::new(R,G,B,col,row));		
 
 		    }
 		    else {
@@ -342,6 +341,12 @@ fn main(){
                         do shared_arcs[e.dest.y][e.dest.x].read |dest| {
                             do shared_arcs[e.source.y][e.source.x].read |src| {
                                 println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));
+                                let dest_parent = findParent(&shared_colormap,dest.color);
+                                let src_parent =  findParent(&shared_colormap,src.color);
+                                if src_parent != dest_parent {
+                                    setParent(&shared_colormap,src.color,dest_parent);
+                                    println(fmt!("bridge: (%i,%i:%i->%i)-(%i,%i:%i->%i) : %f",src.x,src.y,src.color,src_parent,dest.x,dest.y,dest.color,dest_parent, e.cost)); 
+                                }
                             }
                         }    
                     }
