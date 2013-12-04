@@ -98,7 +98,26 @@ fn edgeCost(a: &Pixel, b: &Pixel) -> float {
             (a.r-b.r)*(a.r-b.r) + (a.g-b.g)*(a.g-b.g) + (a.b-b.b)*(a.b-b.b) ) as float)
 }
 
+fn findParent(map: &arc::RWArc<~[int]>, a: int) -> int {
+    do map.read() |colors| {
+        if colors[a] < 0 {
+            a
+        } else {
+            findParent(map, colors[a])
+        }
+    }
+}
 
+fn setParent(map: &arc::RWArc<~[int]>, ind: int, val: int) {
+    let mut tmp: int = -1;
+    do map.write() |colors| {
+        tmp = colors[ind];
+        colors[ind] = val;
+    }
+    if tmp > 0 {
+        setParent(map, tmp, val);
+    }
+}
 
 fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
     let mut retval: ~[~[Pixel]] = ~[];
@@ -208,6 +227,7 @@ fn main(){
     
     let arcs = find_arcs; // now we have an immutable array that can be shared
     
+    let mut colormap:  ~[int] = ~[];
     let corners = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1) ];
     
     let mut color_index = 0;
@@ -217,11 +237,15 @@ fn main(){
             pix.color = color_index;
         }
         color_index+=1;
+        colormap.push(-1);
     }
+    
+    let colormap_arc: arc::RWArc<~[int]> =  arc::RWArc::new(colormap);
     
     for &corner in corners.iter() {
         let (a,b) = corner;
         let shared_arcs = arcs.clone();
+        let shared_colormap = colormap_arc.clone();
         do spawn { // split into threads here
             let c = a;
             let d = b;
