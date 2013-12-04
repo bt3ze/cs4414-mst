@@ -114,7 +114,7 @@ fn setParent(map: &arc::RWArc<~[int]>, ind: int, val: int) {
         tmp = colors[ind];
         colors[ind] = val;
     }
-    if tmp > 0 {
+    if tmp >= 0 {
         setParent(map, tmp, val);
     }
 }
