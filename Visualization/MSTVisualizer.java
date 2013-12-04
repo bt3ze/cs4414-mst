@@ -3,40 +3,46 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
+import java.util.Collections;
 import java.util.Scanner;
 import java.util.Vector;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.awt.image.DataBufferByte;
 
 import javax.imageio.ImageIO;
 
 
+
 public class MSTVisualizer {
+	
+	//UPDATE HERE: Yields 8 result images
+	private final static double startPercentile = 0.75;
+	private final static double step = 0.03;
+	
 
+	@SuppressWarnings("unchecked")
 	public static void main(String[] args) {
+
+		//Tools and properties
+		File input = null;
 		BufferedImage image = null;
+		WritableRaster wr = null;
 
-
-		File output = new File("out.jpg");
-		//File output2 = new File("C:\\out.gif");
-		//File output3 = new File("C:\\out.png");
-
+		//Data structures
 		float [] pixelArray = null;
 		Vector<Edge> edges = new Vector<Edge>();
+
+		//Variables
+		int height = 0; 
+		int width = 0;
 
 
 		try {
 
 			//Read and parse input
-			File file = new File(args[0]);
-			System.out.println("File opened: "+ file.getPath());
-			//File file = new File("sample.out.txt");
-			Scanner reader = new Scanner(new FileInputStream(file));
-			int height = 0; 
-			int width = 0;
-
+			System.out.println("------------------------------------INPUT------------------------------------");
+			input = new File(args[0]);
+			//input = new File("src/sample.out.txt");
+			System.out.println("File opened: "+ input.getPath());
+			Scanner reader = new Scanner(new FileInputStream(input));
 
 
 			int malformedLinesSkipped = 0;
@@ -74,80 +80,90 @@ public class MSTVisualizer {
 			System.out.println("Edges added: "+edgesAdded);
 			System.out.println("Malformed lines skipped: "+malformedLinesSkipped);
 
-
-			//Testing
-			/*URL url = new URL("http://www.mkyong.com/image/mypic.jpg");
-			image = ImageIO.read(url);
-			byte imageData[] = ((DataBufferByte)image.getData().getDataBuffer()).getData();
-			int numPix = 0;
-			for(int i = 0; i < imageData.length; i+=3){
-				byte colorNum = imageData[i];
-				int r = (int)imageData[i];
-				int g = (int)imageData[i+1];
-				int b = (int)imageData[i+2];
-				System.out.println("R "+r+" G "+g+" B "+b);
-				numPix++;
-			}
-			System.out.println("Dimensions yield "+image.getWidth()*image.getHeight() + " pixels");
-			System.out.println("NumPix expected from file: "+(float)imageData.length/3);
-			System.out.println("NumPix actual: "+numPix);*/
-			//System.out.println(image.getType());
-
-			//Initialize output image buffer
-			int imageType = 5;
-			image = new BufferedImage(width, height, imageType);
-			WritableRaster wr = (WritableRaster) image.getData();
-			
-			//Set all pixels initially to white
-			System.out.println("H"+height+"W"+width);
-			for(int h = 0; h < height; h++){
-				for(int w = 0; w < width; w++){
-					wr.setPixel(w, h, Color(255,255,255));
-				}
-			}
-			
-				
-			//Search for heavy edges
-			float heavyCutoff = (float) 50; //230.0;
-
-			int heavyEdges = 0;
-			for(int i = 0; i < edges.size(); i++){
-				if(edges.get(i).getCost() > heavyCutoff){					
-					int startX = edges.get(i).getStartX();
-					int startY = edges.get(i).getStartY();
-					int endX = edges.get(i).getEndX();
-					int endY = edges.get(i).getEndY();
-					
-					wr.setPixel(startX, startY, Color(0,0,0));
-					wr.setPixel(endX, endY, Color(255,0,0));
-					
-					heavyEdges++;
-				}
-			}
-			System.out.println("Heavy edges found: "+heavyEdges);
-
-
-			//Depth-first search to recolor pixels
-			for(int i = 0; i < edges.size(); i++){
-				//System.out.println(edges.get(i).toString());
-			}
-			
-			
-
-
-			//Write output to file
-			pixelArray = wr.getPixels(0, 0, width, height, pixelArray);
-			wr.setPixels(0, 0, width, height, pixelArray); 
-			image.setData(wr);
-			ImageIO.write(image, "jpg", output);
-			//ImageIO.write(image, "gif", output2);
-			//ImageIO.write(image, "png", output3);
-
+			//Sort edge vector by cost
+			Collections.sort(edges);
 
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			System.out.println("Unable to parse edge data from file.");
 		}
+
+
+		//Initialize output image buffer
+		int imageType = 5;
+		image = new BufferedImage(width, height, imageType);
+		wr = (WritableRaster) image.getData();
+		System.out.println("Image dimensions: H"+height+"W"+width);
+		System.out.println("------------------------------------OUTPUT------------------------------------");
+
+
+		//Image Processing
+		if(wr != null && image != null && !edges.isEmpty()){
+			int iter = 0;
+			for(double percentile = startPercentile; percentile < 1; percentile += step){
+				
+				//Set all pixels initially to white
+				for(int h = 0; h < height; h++){
+					for(int w = 0; w < width; w++){
+						wr.setPixel(w, h, Color(255,255,255));
+					}
+				}
+				
+				
+				//Percentile calculation of heavy-cost cutoff
+				int index = (int) (edges.size()*percentile);
+				Edge cutoff = edges.get(index);
+				float heavyCutoff = cutoff.getCost();
+				//float heavyCutoff = (float) 50; //230.0;
+				System.out.println("Heavy cost cutoff applied: "+heavyCutoff);
+				
+
+				//Search for heavy edges
+				int heavyEdges = 0;
+				for(int i = 0; i < edges.size(); i++){
+					if(edges.get(i).getCost() > heavyCutoff){                                        
+						int startX = edges.get(i).getStartX();
+						int startY = edges.get(i).getStartY();
+						int endX = edges.get(i).getEndX();
+						int endY = edges.get(i).getEndY();
+
+						wr.setPixel(startX, startY, Color(0,0,0));
+						wr.setPixel(endX, endY, Color(255,0,0));
+
+						heavyEdges++;
+					}
+				}
+				System.out.println("Heavy edges found: "+heavyEdges);		
+
+
+				//Depth-first search to recolor pixels
+				/*for(int i = 0; i < edges.size(); i++){
+					//System.out.println(edges.get(i).toString());
+				}*/
+
+
+
+
+				//Write output to files
+				pixelArray = wr.getPixels(0, 0, width, height, pixelArray);
+				wr.setPixels(0, 0, width, height, pixelArray); 
+				image.setData(wr);
+				try {
+					String filename = "out"+iter+".jpg";
+					ImageIO.write(image, "jpg", new File(filename));
+					System.out.println("Results successfully written to "+filename+".");
+				} catch (IOException e) {
+					System.out.println("Unable to write results for cutoff of "+heavyCutoff+"to an image file.");
+				}
+				System.out.println("---------");
+				iter++;
+			}
+		}
+		else{
+			System.out.println("Error initializing data structures.");
+		}		
+
 		System.out.println("Done");
 	}
 

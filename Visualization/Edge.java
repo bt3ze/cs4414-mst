@@ -1,5 +1,5 @@
 
-public class Edge {
+public class Edge implements Comparable{
 	private int startX;
 	private int startY;
 	private int endX;
@@ -57,6 +57,14 @@ public class Edge {
 	@Override
 	public String toString(){
 		return "Start: ("+this.startX+","+this.startY+"), End: ("+this.endX+","+this.endY+"), Cost: "+this.cost;
+	}
+
+	@Override
+	public int compareTo(Object arg0) { //returns negative for this is < other, 0 for =, positive for >
+		float diff = this.cost - ((Edge)arg0).getCost();
+		if (diff < 0) return -1;
+		else if (diff > 0) return 1;
+		else return 0;
 	}
 
 }
