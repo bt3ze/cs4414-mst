@@ -13,8 +13,13 @@ sample: ImageReader.class ImageReader.java
 corners: ImageReader.class ImageReader.java
 	java ImageReader small-corners.jpg
 
-dancers: ImageReader.class ImageReader.java
+dancers: bluedancers purpledancers
+
+bluedancers: ImageReader.class ImageReader.java
 	java ImageReader bluedancers.jpg
+
+purpledancers: ImageReader.class ImageReader.java
+	java ImageReader purpledancers.jpg
 
 prim: mst.rs
 	rustc mst.rs
