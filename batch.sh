@@ -1,4 +1,4 @@
 make mst
-./mst step_gradient.jpg > testdata/gradient.out
-./mst purpledancers.jpg > testdata/purple.out
-./mst bluedancers.jpg > testdata/blue.out
+./mst step_gradient.jpg > tests/gradient5.out
+./mst purpledancers.jpg > tests/purple5.out
+./mst bluedancers.jpg > tests/blue5.out
