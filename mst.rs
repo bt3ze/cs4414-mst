@@ -341,26 +341,13 @@ fn main(){
                 }   
             }
             
+            // write all of the supervertex's shared boundaries out to be compared concurrently for contraction
             do shared_boundaries.write |bounds| {
                 loop {
                     match boundaries.maybe_pop() {
                         Some(e) => 
                             {
                             bounds.push(e);
-//                            do shared_arcs[e.dest.y][e.dest.x].read |dest| {
-  //                              do shared_arcs[e.source.y][e.source.x].read |src| {
-    //                                println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));
-//                                    bounds.push(e);
-                                    
-       //                             let dest_parent = findParent(&shared_colormap,dest.color);
-        //                            let src_parent =  findParent(&shared_colormap,src.color);
-         //                           if src_parent != dest_parent {
-          //                              setParent(&shared_colormap,src.color,dest_parent);
-           //                             println(fmt!("bridge: (%i,%i:%i->%i)-(%i,%i:%i->%i) : %f",src.x,src.y,src.color,src_parent,dest.x,dest.y,dest.color,dest_parent, e.cost)); 
-            //                        }
-                                    
-      //                          }
-        //                    }    
                         }
                         None => { break; }
                     }
@@ -370,15 +357,17 @@ fn main(){
         }
     }
     
+    // wait for all the child threads to write their boundary-crossing edges
     for x in range(0,numnodes) {
         port.recv();
     }
+
+    // then find the cut-crossing edges
     do boundary_arc.write |boundaries| {
         let mut bridges:uint = 0;
         loop {
             match boundaries.maybe_pop() {
                 Some(e) => {
-//                    println(fmt!("%?",e));
                      do arcs[e.dest.y][e.dest.x].read |dest| {
                         do arcs[e.source.y][e.source.x].read |src| {
                             println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));       
@@ -391,22 +380,15 @@ fn main(){
                             }
                         }    
                     }
+
+                    // break when all of the supervertices have been connected
                     if bridges >= numnodes -1 {
                         break;
                     }
                 },
-                None => { break }
+                None => { break } // should not execute. break two lines above should do it
             }
         }
     }
   
-/*    
-    for h in range(0,height){
-        for w in range(0,width){
-            do arcs[h][w].read |pix| {
-                //        println(fmt!("color(%i,%i) %i",w,h,pix.color));
-	    }
-        }
-    }
-*/
 }
