@@ -100,21 +100,16 @@ fn edgeCost(a: &Pixel, b: &Pixel) -> float {
 }
 
 fn findParent(map: &~[int], a: int) -> int {
- //   do map.read() |colors| {
-        if map[a] < 0 {
+    if map[a] < 0 {
             a
-        } else {
-            findParent(map, map[a])  
-        }
-  //  }
+    } else {
+        findParent(map, map[a])  
+    }
 }
 
 fn setParent(colors: &mut ~[int], ind: int, val: int) {
-    let mut tmp: int = -1;
- //   do map.write() |colors| {
-    tmp = colors[ind];
+    let tmp = colors[ind];
     colors[ind] = val;
-  //  }
     if tmp >= 0 {
         setParent(colors, tmp, val);
     }
@@ -167,11 +162,8 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 	    }
 
 	    //fill in the retVal array with pixel data
-            //let mut rowfirst = false;
 	    for row in range(0,h){
-//                if(!rowfirst) {
                 retval.push(~[]);
-                //rowfirst = true; }
 		for col in range(0,w){
 	    	    if !reader.eof() {
 			let line: &str = reader.read_line();
@@ -208,7 +200,6 @@ fn readImage( filename: &~str) -> ~ [ ~[Pixel]] {
 
 fn main(){
     let argv =  os::args();
- //   println(argv.to_str());
 
     let pixels: ~[ ~[Pixel] ] = readImage(&argv[1]);
     let height = pixels.len() as int;
@@ -242,7 +233,6 @@ fn main(){
         colormap.push(-1);
     }
     
-//    let colormap_arc: arc::RWArc<~[int]> =  arc::RWArc::new(colormap);
     let boundaryqueue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
     let boundary_arc: arc::RWArc<priority_queue::PriorityQueue<Edge>> = arc::RWArc::new(boundaryqueue);
     
@@ -255,8 +245,6 @@ fn main(){
         let shared_boundaries = boundary_arc.clone();
         let child_chan = chan.clone();
         do spawn { // split into threads here
-//            let c = a;
-//            let d = b;
             let mut x=a;
             let mut y=b;
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
@@ -269,7 +257,6 @@ fn main(){
             }
            
 //            println(fmt!("start at (%i,%i): color = %i",c,d,color));
-
             loop {
                 //  at most once each:
                 //   visit the next vertex (determined by the last edge we chose or the starting vertex) to claim its neighbors and add its edges to our queue
