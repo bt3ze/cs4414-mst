@@ -21,6 +21,7 @@ Edge contains two points: source and dest, along with the edge cost between them
 extern mod extra;
 use std::{os, num, hashmap} ;
 use extra::{arc,priority_queue};
+use std::comm::*;
 
 struct Pixel{
     r: int,
@@ -228,7 +229,9 @@ fn main(){
     
     let mut colormap:  ~[int] = ~[];
     let corners = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1) ];
-    
+    let numnodes: uint = corners.len();
+    println(fmt!("number of nodes: %u",numnodes));
+
     let mut color_index = 0;
     for &corner in corners.iter(){
         let (a,b) = corner;
@@ -240,17 +243,22 @@ fn main(){
     }
     
     let colormap_arc: arc::RWArc<~[int]> =  arc::RWArc::new(colormap);
+    let boundaryqueue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
+    let boundary_arc: arc::RWArc<priority_queue::PriorityQueue<Edge>> = arc::RWArc::new(boundaryqueue);
     
+    let (port, chan) = stream();
+    let chan = SharedChan::new(chan);
+
     for &corner in corners.iter() {
         let (a,b) = corner;
         let shared_arcs = arcs.clone();
-        let shared_colormap = colormap_arc.clone();
+        let shared_boundaries = boundary_arc.clone();
+        let child_chan = chan.clone();
         do spawn { // split into threads here
             let c = a;
             let d = b;
             let mut x=a;
             let mut y=b;
-
             let mut queue: priority_queue::PriorityQueue<Edge> =  priority_queue::PriorityQueue::new();
             let mut visited: hashmap::HashMap<(int,int),bool> = hashmap::HashMap::new();            
             let mut newvisit: bool = true;
@@ -259,8 +267,7 @@ fn main(){
             do shared_arcs[b][a].read |pix| {
                 color = pix.color;
             }
-            
-
+           
             println(fmt!("start at (%i,%i): color = %i",c,d,color));
 
             loop {
@@ -334,34 +341,72 @@ fn main(){
                 }   
             }
             
-            loop {
-                match boundaries.maybe_pop() {
-                    Some(e) => 
-                        {
-                        do shared_arcs[e.dest.y][e.dest.x].read |dest| {
-                            do shared_arcs[e.source.y][e.source.x].read |src| {
-                                println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));
-                                let dest_parent = findParent(&shared_colormap,dest.color);
-                                let src_parent =  findParent(&shared_colormap,src.color);
-                                if src_parent != dest_parent {
-                                    setParent(&shared_colormap,src.color,dest_parent);
-                                    println(fmt!("bridge: (%i,%i:%i->%i)-(%i,%i:%i->%i) : %f",src.x,src.y,src.color,src_parent,dest.x,dest.y,dest.color,dest_parent, e.cost)); 
-                                }
-                            }
-                        }    
+            do shared_boundaries.write |bounds| {
+                loop {
+                    match boundaries.maybe_pop() {
+                        Some(e) => 
+                            {
+                            bounds.push(e);
+//                            do shared_arcs[e.dest.y][e.dest.x].read |dest| {
+  //                              do shared_arcs[e.source.y][e.source.x].read |src| {
+    //                                println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));
+//                                    bounds.push(e);
+                                    
+       //                             let dest_parent = findParent(&shared_colormap,dest.color);
+        //                            let src_parent =  findParent(&shared_colormap,src.color);
+         //                           if src_parent != dest_parent {
+          //                              setParent(&shared_colormap,src.color,dest_parent);
+           //                             println(fmt!("bridge: (%i,%i:%i->%i)-(%i,%i:%i->%i) : %f",src.x,src.y,src.color,src_parent,dest.x,dest.y,dest.color,dest_parent, e.cost)); 
+            //                        }
+                                    
+      //                          }
+        //                    }    
+                        }
+                        None => { break; }
                     }
-                    None => { break; }
                 }
             }
-
+            child_chan.send(0);
         }
     }
     
+    for x in range(0,numnodes) {
+        port.recv();
+    }
+    do boundary_arc.write |boundaries| {
+        let mut bridges:uint = 0;
+        loop {
+            match boundaries.maybe_pop() {
+                Some(e) => {
+//                    println(fmt!("%?",e));
+                     do arcs[e.dest.y][e.dest.x].read |dest| {
+                        do arcs[e.source.y][e.source.x].read |src| {
+                            println(fmt!("boundary (%i,%i:%i)-%f-(%i,%i:%i)",src.x,src.y,src.color,e.cost,dest.x,dest.y,dest.color));       
+                            let dest_parent = findParent(&colormap_arc,dest.color);
+                            let src_parent =  findParent(&colormap_arc,src.color);
+                            if src_parent != dest_parent {
+                                setParent(&colormap_arc,src.color,dest_parent);
+                                println(fmt!("bridge: (%i,%i:%i->%i)-(%i,%i:%i->%i) : %f",src.x,src.y,src.color,src_parent,dest.x,dest.y,dest.color,dest_parent, e.cost));
+                                bridges +=1;
+                            }
+                        }    
+                    }
+                    if bridges >= numnodes -1 {
+                        break;
+                    }
+                },
+                None => { break }
+            }
+        }
+    }
+  
+/*    
     for h in range(0,height){
         for w in range(0,width){
             do arcs[h][w].read |pix| {
-        //        println(fmt!("color(%i,%i) %i",w,h,pix.color));
+                //        println(fmt!("color(%i,%i) %i",w,h,pix.color));
 	    }
         }
     }
+*/
 }
