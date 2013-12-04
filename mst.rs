@@ -22,6 +22,7 @@ extern mod extra;
 use std::{os, num, hashmap} ;
 use extra::{arc,priority_queue};
 use std::comm::*;
+use extra::time;
 
 struct Pixel{
     r: int,
@@ -205,6 +206,7 @@ fn main(){
     let height = pixels.len() as int;
     let width = pixels[0].len() as int;
 
+    let starttime =  extra::time::precise_time_ns() as int;
     println(fmt!("Dimensions received: H %? W %?",height,width));
 
     let mut find_arcs: ~[ ~[arc::RWArc<Pixel>] ] =  ~[];
@@ -219,7 +221,7 @@ fn main(){
     let arcs = find_arcs; // now we have an immutable array that can be shared
     
     let mut colormap: ~[int] = ~[];
-    let nodes = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1) ];
+    let nodes = [ (0,0),(width-1,0),(0,height-1),(width-1,height-1), (width/2,height/2) ];
     let numnodes: uint = nodes.len();
     println(fmt!("number of nodes: %u",numnodes));
 
@@ -379,5 +381,8 @@ fn main(){
             }
         }
     }
+
+    let endtime =  extra::time::precise_time_ns() as int;
+    println(fmt!("elapsed time: %i ms",(endtime-starttime)/1000000));
   
 }
