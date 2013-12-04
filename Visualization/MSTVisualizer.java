@@ -91,10 +91,11 @@ public class MSTVisualizer {
 			System.out.println("Dimensions yield "+image.getWidth()*image.getHeight() + " pixels");
 			System.out.println("NumPix expected from file: "+(float)imageData.length/3);
 			System.out.println("NumPix actual: "+numPix);*/
-
+			//System.out.println(image.getType());
 
 			//Initialize output image buffer
-			image = new BufferedImage(width, height, image.getType());
+			int imageType = 5;
+			image = new BufferedImage(width, height, imageType);
 			WritableRaster wr = (WritableRaster) image.getData();
 			
 			//Set all pixels initially to white
