@@ -267,7 +267,28 @@ fn main(){
                 //  at most once each:
                 //   visit the next vertex (determined by the last edge we chose or the starting vertex) to claim its neighbors and add its edges to our queue
                 //   pop the next edge off the queue, which contains all of the edges between vertices claimed by the local thread
+                
+                
+                if(newvisit){ // if the next vertex has not previously been visited to claim neighbors and add edges
+                    let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x-1,y)]; // potential neighbors
+                    for &coord in neighbors.iter() {
+                        let (w,z) = coord;
+                        if w >=0 && w < width && z >=0 && z < height { // bounds checking on neighbors to only select valid edges
+                            do shared_arcs[z][w].read |dest| {
+                                do shared_arcs[y][x].read |src| {
+                                    let newedge = Edge::new(Point::new(x,y),Point::new(w,z),edgeCost(src,dest));
+                                    if dest.color >= 0 {
+                                        boundaries.push(newedge);         
+                                    } else {
+                                        queue.push(newedge);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
+                /*
                 if(newvisit){ // if the next vertex has not previously been visited to claim neighbors and add edges
                     let neighbors = [ (x,y-1),(x+1,y), (x,y+1), (x-1,y)]; // potential neighbors
                     for &coord in neighbors.iter() {
@@ -314,21 +335,33 @@ fn main(){
                         }
                     }
                 }
-                 
+                 */
+                
                 let edge = queue.maybe_pop(); // should fail only when we've exhausted all the edges in our queue, i.e. this thread is done running Prim
                 match edge {
                     Some(e) => {
                         //println(fmt!("(%i,%i) pop (%i,%i)-%f-(%i,%i)",c,d,e.source.x,e.source.y,e.cost,e.dest.x,e.dest.y));
-                        println(fmt!("(%i,%i),(%i,%i):%f\n",e.source.x,e.source.y,e.dest.x,e.dest.y,e.cost));
                         let coord = (e.dest.x,e.dest.y);
+                        newvisit = false;
                         if !visited.contains_key(&coord){
                             // use visited hashmap to figure out if we're at a new vertex or a previously seen one
                             visited.insert(coord,true); //add to growing spanning forest
-                            x = e.dest.x; // update search coordinates for next iteration
-                            y = e.dest.y;
-                            newvisit = true; // update flag to claim new vertex's neighbors
-                        } else {
-                            newvisit = false;
+                            let (w,z) = coord;
+                            let mut colored: bool = true;
+                            do shared_arcs[z][w].write |dest| {
+                                if dest.color < 0 {
+                                    dest.color = color;
+                                    colored = false;
+                                }
+                            }
+                            if !colored {
+                                x = w; // update search coordinates for next iteration
+                                y = z;
+                                newvisit = true; // update flag to claim new vertex's neighbors 
+                                println(fmt!("(%i,%i),(%i,%i):%f\n",e.source.x,e.source.y,e.dest.x,e.dest.y,e.cost));
+                            } else {
+                                boundaries.push(e);
+                            }
                         }
                     },
                     None => { break; } // this should execute at the end when there are no more unvisited or uncolored nodes for a thread
